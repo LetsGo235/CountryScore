@@ -29,13 +29,19 @@ a:hover { color: #c45500; text-decoration: underline; }
 
 .brand:hover { color: white; text-decoration: none; }
 
+.brand-image-link {
+  min-width: 210px;
+}
+
+.brand-logo {
+  height: 42px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .brand-box {
-  display: inline-block;
-  border: 1px solid #f3a847;
-  color: #f3a847;
-  padding: 6px 7px;
-  font-weight: bold;
-  border-radius: 2px;
+  display: none;
 }
 
 .nav-search {
