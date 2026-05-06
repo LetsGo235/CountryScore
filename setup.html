@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup - CountryScore</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body data-page="setup">
+  <header id="topNav"></header>
+  <main class="container">
+    <section class="form-panel">
+      <h1>Live Google Sheets setup</h1>
+      <p class="muted">This version uses Google Apps Script as a live JSON endpoint. It can read from and write to the sheet without CSV publishing.</p>
+
+      <form id="setupForm">
+        <label>Apps Script Web App URL
+          <input id="appsScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+        </label>
+
+        <label>Live refresh seconds
+          <input id="refreshSeconds" type="number" min="10" value="20" />
+        </label>
+
+        <button class="yellow-btn" type="submit">Save setup</button>
+        <button id="clearLocalBtn" class="small-btn" type="button">Clear local test reviews</button>
+        <p id="setupMessage" class="success"></p>
+      </form>
+
+      <div class="help-box">
+        <h3>Google Sites testing note</h3>
+        <p>Google Sites usually works best by embedding this site in an iframe from a host like GitHub Pages, Netlify, Vercel, or Google Drive preview. New Google Sites is not a normal static file host for multiple HTML/CSS/JS files.</p>
+      </div>
+
+      <div class="help-box">
+        <h3>Sheet headers</h3>
+        <pre class="code-box">id,timestamp,country,status,category,subcategory,score,displayName,title,comment</pre>
+      </div>
+    </section>
+  </main>
+  <script src="assets/config.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

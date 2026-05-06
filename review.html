@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Write a review - CountryScore</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body data-page="review">
+  <header id="topNav"></header>
+  <main class="container">
+    <section class="form-panel">
+      <h1>Write a country review</h1>
+      <p class="muted">Use a score from 1 to 10. Subcategory is optional, so reviews can be general when needed.</p>
+
+      <form id="reviewForm">
+        <div class="form-grid">
+          <label>Country
+            <input id="reviewCountry" name="country" required placeholder="Netherlands" list="countryList" />
+          </label>
+
+          <label>Your relationship to the country
+            <select name="status" required>
+              <option value="current_resident">I live there</option>
+              <option value="former_resident">I used to live there</option>
+              <option value="visited">I visited</option>
+              <option value="never_been">Outside opinion / never been</option>
+            </select>
+          </label>
+
+          <label>Category
+            <select id="reviewCategory" name="category" required></select>
+          </label>
+
+          <label>Subcategory optional
+            <select id="reviewSubcategory" name="subcategory"></select>
+          </label>
+
+          <label>Score 1 to 10
+            <input id="reviewScore" name="score" type="number" min="1" max="10" step="0.5" value="8" required />
+          </label>
+
+          <label>Display name
+            <input name="displayName" placeholder="Anonymous" />
+          </label>
+        </div>
+
+        <div id="scorePreview" class="score-preview"></div>
+
+        <label>Review title
+          <input name="title" required maxlength="80" placeholder="Example: Great transport, painful rent" />
+        </label>
+
+        <label>Review text
+          <textarea name="comment" required maxlength="700" placeholder="Explain the score. Keep it useful."></textarea>
+        </label>
+
+        <button class="yellow-btn" type="submit">Submit review</button>
+        <p id="formMessage"></p>
+      </form>
+    </section>
+  </main>
+  <script src="assets/config.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

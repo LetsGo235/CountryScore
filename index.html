@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Countries - CountryScore</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body data-page="home">
+  <header id="topNav"></header>
+  <main class="container">
+    <section class="hero">
+      <h1>CountryScore</h1>
+      <p>Read structured country reviews from people who live there, used to live there, visited, or are judging from outside. Scores are organized by category and subcategory instead of random comments.</p>
+      <p><strong id="totalReviewCount">0</strong> reviews loaded.</p>
+    </section>
+
+    <section class="toolbar">
+      <input id="homeSearch" type="search" placeholder="Search by country, category, or review text" />
+      <select id="countrySelect" data-country-select></select>
+      <select id="sortSelect">
+        <option value="score_desc">Highest rated</option>
+        <option value="score_asc">Lowest rated</option>
+        <option value="reviews_desc">Most reviewed</option>
+        <option value="country_asc">Country A-Z</option>
+      </select>
+    </section>
+
+    <section id="countryGrid" class="grid"></section>
+  </main>
+  <script src="assets/config.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
