@@ -70,7 +70,9 @@ function renderSharedLayout() {
 
   navHost.innerHTML = `
     <div class="nav-main">
-      <a class="brand" href="index.html"><span class="brand-box">CS</span><strong>CountryScore</strong></a>
+      <a class="brand brand-image-link" href="index.html">
+  <img src="assets/logo.png" alt="CountryScore" class="brand-logo" />
+</a>
       <form class="nav-search" action="country.html">
         <select id="navCountrySelect" name="country"></select>
         <input id="navSearchInput" placeholder="Search countries, categories, reviews..." />
