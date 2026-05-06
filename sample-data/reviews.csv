@@ -1,4 +1,0 @@
-id,timestamp,country,status,category,subcategory,score,displayName,title,comment
-sample-1,2026-05-01T10:00:00Z,Netherlands,current_resident,infrastructure,Public Transport,9,Amsterdam resident,Easy to move around,"Trains, bikes and city transport make daily life smooth. Expensive, but the system works."
-sample-2,2026-05-01T11:00:00Z,Netherlands,current_resident,costOfLiving,Rent,5,Local reviewer,Housing is the pain point,"Quality of life is strong, but rent and housing availability pull the score down."
-sample-3,2026-05-02T08:00:00Z,USA,former_resident,jobs,Career Growth,8.5,Former resident,"High opportunity, uneven life quality","Career upside is real, but healthcare and safety vary heavily depending on where you are."
