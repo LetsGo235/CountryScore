@@ -38,3 +38,17 @@ The Apps Script URL is still visible. That is normal.
 The secure part is that the endpoint no longer reveals private/raw sheet data.
 
 Never store passwords in Google Sheets.
+
+
+## v4 color update
+
+The Amazon-style yellow/orange accents were replaced with a CountryScore palette:
+
+- Navy header
+- Blue links and score accents
+- Green buttons and star accents
+- Light blue/green panels
+
+Main color variables are at the top of:
+
+assets/styles.css
