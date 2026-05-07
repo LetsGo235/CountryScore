@@ -45,13 +45,19 @@ a:hover { color: var(--cs-link-hover); text-decoration: underline; }
 
 .brand:hover { color: white; text-decoration: none; }
 
+.brand-image-link {
+  min-width: 210px;
+}
+
+.brand-logo {
+  height: 42px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .brand-box {
-  display: inline-block;
-  border: 1px solid var(--cs-green);
-  color: var(--cs-green);
-  padding: 6px 7px;
-  font-weight: bold;
-  border-radius: 2px;
+  display: none;
 }
 
 .nav-search {
