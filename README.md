@@ -1,95 +1,40 @@
-# CountryScore v2
+# CountryScore v3 Secure Public API
 
-Bright, multi-page, marketplace-style CountryScore prototype.
+## Changes
 
-## What changed
+- Removed public setup.html
+- Removed Setup link from navigation
+- Frontend now reads only from ?action=publicReviews
+- Apps Script returns sanitized public review data only
+- Apps Script separates raw submitted reviews from public reviews
 
-- Bright 2015-style marketplace design
-- Amazon-like top navigation bar
-- Multiple pages:
-  - `index.html` country browse page
-  - `country.html` country detail page
-  - `review.html` review submission page
-  - `categories.html` category rankings page
-  - `setup.html` live Google Sheets setup page
-- Country pages show:
-  - star rating
-  - numeric 10-point score
-  - reviewer-type breakdown
-  - categories
-  - optional subcategories
-  - recent reviews
-- Review form uses number input fields, not sliders
-- Subcategory is optional
-- Live refresh from Google Sheets through Apps Script JSON endpoint
+## Configure the hook
 
-## Run locally
+Edit:
 
-```bash
-cd CountryScore_v2
-python -m http.server 8000
-```
+assets/config.js
 
-Open:
+Set:
 
-```text
-http://localhost:8000
-```
+window.COUNTRYSCORE_CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
+  REFRESH_SECONDS: 20
+};
 
-## Live Google Sheets hook
+Then commit and push to GitHub Pages.
 
-This version does not depend on published CSV.
+## Update Apps Script
 
-It uses Apps Script as a real JSON endpoint:
+Replace your old Apps Script code with:
 
-```text
-GET  ?action=list
-POST review JSON
-```
+google-apps-script/Code.gs
 
-The website polls the endpoint every 20 seconds by default.
+Then deploy a new Web App version.
 
-## Google Sheet setup
+## Important
 
-Create a Google Sheet. Then:
+The Apps Script URL is still visible. That is normal.
 
-1. Go to `Extensions > Apps Script`
-2. Paste `google-apps-script/Code.gs`
-3. Save
-4. Deploy > New deployment
-5. Type: Web app
-6. Execute as: Me
-7. Who has access: Anyone
-8. Copy the Web App URL
-9. Open `setup.html`
-10. Paste the URL and save
+The secure part is that the endpoint no longer reveals private/raw sheet data.
 
-The script will automatically create a `Reviews` sheet with these headers:
-
-```text
-id,timestamp,country,status,category,subcategory,score,displayName,title,comment
-```
-
-## Important Google Sites note
-
-New Google Sites is not a normal static hosting platform for multiple HTML/CSS/JS files.
-
-Best testing options:
-
-1. Host this folder on GitHub Pages, Netlify, Vercel, or similar.
-2. Embed that hosted site into Google Sites using an iframe/embed block.
-3. Or use Google Apps Script HTML service as the host, but that requires adapting file loading.
-
-For local testing, the included Python server method is easiest.
-
-## Production upgrades
-
-Before public launch:
-
-- accounts/login
-- moderation dashboard
-- country whitelist
-- spam/rate-limit protection
-- duplicate review detection
-- admin approval for new countries/categories
-- abuse reporting
+Never store passwords in Google Sheets.
