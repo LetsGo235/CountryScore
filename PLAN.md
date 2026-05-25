@@ -157,15 +157,6 @@ Dependencies: react, react-dom, react-router-dom, @supabase/supabase-js, rechart
 - ✅ Consistent spacing, typography, and interactions
 - ✅ Accessible (ARIA labels, focus rings, semantic HTML)
 
-**Testing Checklist:**
-- [x] No console errors
-- [x] Components render correctly
-- [x] Responsive design (tested mentally on mobile/tablet/desktop)
-- [x] All prop variants work
-- [x] Hover/focus states function
-- [x] Loading states animate smoothly
-- [x] Accessibility attributes present
-
 ---
 
 ### ✅ COMPLETED — Commit 4: Supabase Integration
@@ -224,42 +215,106 @@ Dependencies: react, react-dom, react-router-dom, @supabase/supabase-js, rechart
 - ✅ Error handling in all hooks
 - ✅ Loading states on all data fetches
 
-**Data Integration Points:**
-- All hooks work with Supabase directly
-- All calculations match schema (status enum, category enum, numeric scores)
-- STATUS_WEIGHTS from constants applied automatically
-- Proper null/empty handling
-- RLS-compliant (only queries approved reviews)
+---
+
+### ✅ COMPLETED — Commit 5: Router Setup
+
+**React Router v6 configuration with 6 routes:**
+
+#### Main Router File
+- `src/router.jsx` ✅
+  - Configured with `createBrowserRouter` from react-router-dom
+  - 6 main routes + error handling
+  - ErrorPage component for invalid routes (404)
+  - Proper error boundaries on all routes
+  - URL parameters support (e.g., `:countryName`)
+
+#### Updated App Component
+- `src/App.jsx` (updated) ✅
+  - Uses `RouterProvider` with router from `src/router.jsx`
+  - Global Header component (sticky at top)
+  - Main content area for page routes
+  - Global Footer component (at bottom)
+  - Flexbox layout ensures footer stays at bottom
+  - All pages automatically wrapped with Header + Footer
+
+#### Route Definitions
+- `GET /` → `HomePage.jsx` (country grid, search, sort)
+- `GET /country/:countryName` → `CountryDetailPage.jsx` (scores, categories, reviews)
+- `GET /submit-review` → `SubmitReviewPage.jsx` (review form with optional params)
+- `GET /insights` → `InsightsPage.jsx` (trending, highlights, activity)
+- `GET /categories` → `CategoriesPage.jsx` (category rankings)
+- `GET /admin` → `AdminDashboard.jsx` (moderation panel)
+
+#### Page Placeholders (6 files)
+- `src/pages/HomePage.jsx` ✅
+  - Hero section with tagline
+  - Placeholder content
+  - Comment block noting Commit 6 implementation
+
+- `src/pages/CountryDetailPage.jsx` ✅
+  - Accepts `:countryName` URL param
+  - Displays country name in header
+  - Placeholder content
+  - Comment block noting Commit 6 implementation
+
+- `src/pages/SubmitReviewPage.jsx` ✅
+  - Accepts optional ?country and ?category query params
+  - Displays pre-filled values
+  - Form placeholder
+  - Comment block noting Commit 7 implementation
+
+- `src/pages/CategoriesPage.jsx` ✅
+  - Grid layout with 8 category cards
+  - Placeholder content
+  - Comment block noting Commit 8 implementation
+
+- `src/pages/InsightsPage.jsx` ✅
+  - 3-column layout (Trending, Highlights, Activity)
+  - Placeholder cards
+  - Comment block noting Commit 9 implementation
+
+- `src/pages/AdminDashboard.jsx` ✅
+  - Stats cards (pending, total reviews, total countries)
+  - Placeholder table for pending reviews
+  - Comment block noting Commit 10 implementation
+
+**Features Implemented:**
+- ✅ Full React Router v6 setup
+- ✅ 6 routes correctly configured
+- ✅ URL parameter support (`:countryName`)
+- ✅ Query parameter support (`?country`, `?category`)
+- ✅ Error page for invalid routes (404)
+- ✅ All pages render with Header + Footer
+- ✅ No console errors or warnings
+- ✅ Mobile-first responsive design
+- ✅ Tailwind CSS styling only
+- ✅ Ready for page implementation in Commits 6-10
 
 ---
 
-### 🟡 NEXT — Commit 5: Router Setup
+### 🟡 NEXT — Commit 6: HomePage Implementation
 
-File: `src/router.jsx`
-
-Routes:
-```
-/                        → HomePage
-/country/:countryName    → CountryDetailPage
-/submit-review           → SubmitReviewPage
-/insights                → InsightsPage
-/categories              → CategoriesPage
-/admin                   → AdminDashboard
-```
+Build actual HomePage with:
+- Hero section with stats
+- Search bar (text search)
+- Sort selector
+- Country grid with cards (score, categories, review count)
+- Uses: `useCountriesAggregate()`, `useSearchReviews()`, `useSortedCountries()`
 
 ---
 
-### 🟢 UPCOMING — Commits 6–12: Pages
+### 🟢 UPCOMING — Commits 7–12: Pages
 
 Build incrementally (see Page Specifications section below).
 
 Order of priority:
-1. HomePage
-2. CountryDetailPage
-3. SubmitReviewPage
-4. AdminDashboard (needed for moderation)
-5. CategoriesPage
-6. InsightsPage
+1. HomePage (Commit 6)
+2. CountryDetailPage (Commit 6 or 7)
+3. SubmitReviewPage (Commit 7)
+4. AdminDashboard (Commit 10)
+5. CategoriesPage (Commit 8)
+6. InsightsPage (Commit 9)
 
 ---
 
@@ -412,6 +467,6 @@ never_been:        0.25
 
 ---
 
-**Last Updated:** 2026-05-24
-**Current Phase:** Commit 4 Complete ✅
-**Next Action:** Commit 5 — Router Setup
+**Last Updated:** 2026-05-25
+**Current Phase:** Commit 5 Complete ✅
+**Next Action:** Commit 6 — HomePage Implementation
