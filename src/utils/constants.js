@@ -71,6 +71,8 @@ export const CATEGORIES = [
     subcategories: ['Public Transport', 'Roads', 'Internet', 'Public Services'],
   },
 ];
+export const DEFAULT_CATEGORIES = CATEGORIES;
+
 
 // Get category by key
 export const getCategoryByKey = (key) => {
