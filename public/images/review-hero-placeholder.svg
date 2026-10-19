@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 275" role="img" aria-labelledby="t d">
+<title id="t">Community illustration placeholder</title><desc id="d">Neutral layout with image placeholder mark. Replace with commissioned CountryScore artwork later.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#eff6ff"/><stop offset="1" stop-color="#f8fbff"/></linearGradient></defs>
+<rect x="3" y="3" width="614" height="269" rx="24" fill="url(#bg)" stroke="#dce8f8" stroke-width="2" stroke-dasharray="8 8"/>
+<circle cx="321" cy="125" r="80" fill="#f4f8ff" stroke="#c5d7ef" stroke-width="3" stroke-dasharray="7 9"/>
+<rect x="277" y="92" width="87" height="68" rx="9" fill="#fff" stroke="#b8cbe7" stroke-width="3"/>
+<circle cx="300" cy="113" r="7" fill="#b8d0f4"/>
+<path d="M286 150l24-23 16 14 12-10 17 19" fill="none" stroke="#94b4e2" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M212 74a135 135 0 0 0-22 34M435 155a135 135 0 0 1-34 50" fill="none" stroke="#b2ccf4" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 7"/>
+<rect x="145" y="46" width="106" height="50" rx="10" fill="#fff" stroke="#d8e3f2" stroke-width="2"/>
+<rect x="161" y="62" width="52" height="6" rx="3" fill="#b9cce6"/><rect x="161" y="75" width="74" height="5" rx="2.5" fill="#e0e8f4"/>
+<rect x="407" y="169" width="108" height="52" rx="10" fill="#fff" stroke="#d8e3f2" stroke-width="2"/>
+<rect x="422" y="184" width="56" height="6" rx="3" fill="#b9cce6"/><rect x="422" y="197" width="76" height="5" rx="2.5" fill="#e0e8f4"/>
+<text x="310" y="243" font-family="Arial,Helvetica,sans-serif" font-size="14" text-anchor="middle" fill="#6c86a9" letter-spacing="2">ILLUSTRATION PLACEHOLDER</text>
+</svg>

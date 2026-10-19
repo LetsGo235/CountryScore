@@ -1,745 +1,496 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ChevronDown,
   ChevronRight,
-  Upload,
+  Clock3,
+  CloudUpload,
+  GraduationCap,
+  Heart,
+  HeartPulse,
+  House,
+  Image as ImageIcon,
+  Leaf,
+  Lightbulb,
+  MapPin,
+  MessageCircle,
+  Plane,
+  Search,
+  ShieldCheck,
+  Smile,
+  Star,
+  TrainFront,
+  UsersRound,
+  Wallet,
+  Wifi,
+  X,
 } from 'lucide-react';
 
-import { supabase } from '../utils/supabase';
 import { useCountries } from '../hooks/useCountries';
+import { supabase } from '../utils/supabase';
 import { REVIEW_COOLDOWN_MS } from '../utils/constants';
 
-const FALLBACK_COUNTRIES = [
-  { name: 'Japan', flag_emoji: '🇯🇵', region: 'Asia' },
-  { name: 'Canada', flag_emoji: '🇨🇦', region: 'North America' },
-  { name: 'Netherlands', flag_emoji: '🇳🇱', region: 'Europe' },
-  { name: 'Singapore', flag_emoji: '🇸🇬', region: 'Asia' },
-  { name: 'Portugal', flag_emoji: '🇵🇹', region: 'Europe' },
-  { name: 'Germany', flag_emoji: '🇩🇪', region: 'Europe' },
-  { name: 'United States', flag_emoji: '🇺🇸', region: 'North America' },
-  { name: 'United Kingdom', flag_emoji: '🇬🇧', region: 'Europe' },
-  { name: 'Australia', flag_emoji: '🇦🇺', region: 'Oceania' },
-  { name: 'New Zealand', flag_emoji: '🇳🇿', region: 'Oceania' },
-  { name: 'France', flag_emoji: '🇫🇷', region: 'Europe' },
-  { name: 'Spain', flag_emoji: '🇪🇸', region: 'Europe' },
-  { name: 'South Korea', flag_emoji: '🇰🇷', region: 'Asia' },
-  { name: 'Thailand', flag_emoji: '🇹🇭', region: 'Asia' },
-  { name: 'Mexico', flag_emoji: '🇲🇽', region: 'North America' },
-];
-
+// These are visual roles, not five distinct database statuses. In the current
+// schema, Expat and Student share the current_resident status with Resident.
 const CONNECTION_TYPES = [
-  {
-    id: 'current_resident',
-    status: 'current_resident',
-    label: 'Resident',
-    subtext: 'I live here',
-    icon: '🏠',
-  },
-  {
-    id: 'expat',
-    status: 'current_resident',
-    label: 'Expat',
-    subtext: 'I live here temporarily',
-    icon: '🌍',
-  },
-  {
-    id: 'student',
-    status: 'current_resident',
-    label: 'Student',
-    subtext: 'I study here',
-    icon: '🎓',
-  },
-  {
-    id: 'visited',
-    status: 'visited',
-    label: 'Traveler',
-    subtext: 'I visited',
-    icon: '✈️',
-  },
-  {
-    id: 'former_resident',
-    status: 'former_resident',
-    label: 'Former Resident',
-    subtext: 'I used to live here',
-    icon: '📌',
-  },
+  { id: 'resident', status: 'current_resident', label: 'Resident', subtitle: 'I live here', Icon: House },
+  { id: 'expat', status: 'current_resident', label: 'Expat', subtitle: 'I live here temporarily', Icon: MapPin },
+  { id: 'student', status: 'current_resident', label: 'Student', subtitle: 'I study here', Icon: GraduationCap },
+  { id: 'traveler', status: 'visited', label: 'Traveler', subtitle: 'I visited', Icon: Plane },
+  { id: 'former', status: 'former_resident', label: 'Former Resident', subtitle: 'I used to live here', Icon: UsersRound },
 ];
 
-const UI_CATEGORIES = [
-  { uiKey: 'safety', dbKey: 'safety', subcategory: 'General', label: 'Safety', icon: '🛡️', defaultScore: 4 },
-  { uiKey: 'costOfLiving', dbKey: 'costOfLiving', subcategory: 'General', label: 'Cost of Living', icon: '💰', defaultScore: 2 },
-  { uiKey: 'healthcare', dbKey: 'healthcare', subcategory: 'General', label: 'Healthcare', icon: '❤️', defaultScore: 4 },
-  { uiKey: 'publicTransport', dbKey: 'infrastructure', subcategory: 'Public Transport', label: 'Public Transport', icon: '🚆', defaultScore: 5 },
-  { uiKey: 'workLifeBalance', dbKey: 'lifestyle', subcategory: 'Work-Life Balance', label: 'Work-Life Balance', icon: '👥', defaultScore: 4 },
-  { uiKey: 'education', dbKey: 'education', subcategory: 'General', label: 'Education', icon: '🎓', defaultScore: 4 },
-  { uiKey: 'internetQuality', dbKey: 'infrastructure', subcategory: 'Internet Quality', label: 'Internet Quality', icon: '📡', defaultScore: 4 },
-  { uiKey: 'friendliness', dbKey: 'lifestyle', subcategory: 'Friendliness', label: 'Friendliness', icon: '😊', defaultScore: 4 },
-  { uiKey: 'cleanliness', dbKey: 'lifestyle', subcategory: 'Cleanliness', label: 'Cleanliness', icon: '✨', defaultScore: 4 },
-  { uiKey: 'opportunities', dbKey: 'jobs', subcategory: 'Opportunities', label: 'Opportunities', icon: '💼', defaultScore: 3 },
+// Do not prepopulate ratings. An unanswered category is not a 4/5 rating.
+// The legacy data model stores one reviews row per selected category. Commit 8C
+// will introduce a parent review + review_ratings structure for accurate counts.
+const RATING_CATEGORIES = [
+  { id: 'safety', dbKey: 'safety', subcategory: 'General', label: 'Safety', Icon: ShieldCheck, color: 'text-blue-600 bg-blue-50' },
+  { id: 'costOfLiving', dbKey: 'costOfLiving', subcategory: 'General', label: 'Cost of Living', Icon: Wallet, color: 'text-amber-600 bg-amber-50' },
+  { id: 'healthcare', dbKey: 'healthcare', subcategory: 'General', label: 'Healthcare', Icon: HeartPulse, color: 'text-rose-600 bg-rose-50' },
+  { id: 'publicTransport', dbKey: 'infrastructure', subcategory: 'Public Transport', label: 'Public Transport', Icon: TrainFront, color: 'text-cyan-600 bg-cyan-50' },
+  { id: 'workLife', dbKey: 'lifestyle', subcategory: 'Work-Life Balance', label: 'Work-Life Balance', Icon: UsersRound, color: 'text-violet-600 bg-violet-50' },
+  { id: 'education', dbKey: 'education', subcategory: 'General', label: 'Education', Icon: GraduationCap, color: 'text-indigo-600 bg-indigo-50' },
+  { id: 'internet', dbKey: 'infrastructure', subcategory: 'Internet Quality', label: 'Internet Quality', Icon: Wifi, color: 'text-sky-600 bg-sky-50' },
+  { id: 'friendliness', dbKey: 'lifestyle', subcategory: 'Friendliness', label: 'Friendliness', Icon: Smile, color: 'text-orange-600 bg-orange-50' },
+  { id: 'cleanliness', dbKey: 'lifestyle', subcategory: 'Cleanliness', label: 'Cleanliness', Icon: Leaf, color: 'text-emerald-600 bg-emerald-50' },
+  { id: 'opportunities', dbKey: 'jobs', subcategory: 'Opportunities', label: 'Opportunities', Icon: BriefcaseBusiness, color: 'text-slate-600 bg-slate-100' },
 ];
 
 const DURATION_OPTIONS = [
-  'Less than 3 months',
-  '3-6 months',
-  '6-12 months',
-  '1-2 years',
-  '2-5 years',
-  '5+ years',
+  'Less than 3 months', '3–6 months', '6–12 months', '1–2 years', '2–5 years', '5+ years',
 ];
+const AGE_OPTIONS = ['18–25', '26–35', '36–45', '46–55', '56–65', '65+', 'Prefer not to say'];
+const TIME_OPTIONS = ['Spring', 'Summer', 'Autumn', 'Winter', 'Year-round'];
 
-const AGE_RANGES = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
+const inputClass = 'w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15';
+const trim = (value) => String(value || '').trim();
 
-const TIME_PERIODS = ['Spring', 'Summer', 'Fall', 'Winter', 'Year-round'];
+function SectionHeading({ number, title, subtitle }) {
+  return (
+    <div className="mb-4 flex items-start gap-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">{number}</span>
+      <div className="pt-0.5">
+        <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+        {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
-const makeInitialRatings = () =>
-  UI_CATEGORIES.reduce((acc, cat) => {
-    acc[cat.uiKey] = cat.defaultScore;
-    return acc;
-  }, {});
-
-const normalizeText = (value) => String(value || '').trim();
-
-const getCountryName = (country) =>
-  typeof country === 'string' ? country : country?.name || '';
-
-const getCountryFlag = (country) =>
-  typeof country === 'string' ? '🌍' : country?.flag_emoji || '🌍';
-
-const buildComment = ({ reviewText, reviewPros, reviewCons, duration, ageRange, timePeriod }) => {
-  const parts = [normalizeText(reviewText)];
-
-  if (normalizeText(reviewPros)) {
-    parts.push(`\n\nPros:\n${normalizeText(reviewPros)}`);
+function CountryFlag({ code, name, size = 'md' }) {
+  const validCode = /^[A-Za-z]{2}$/.test(String(code || ''));
+  const baseSize = size === 'sm' ? 'h-5 w-7' : 'h-7 w-10';
+  if (!validCode) {
+    return (
+      <span aria-label="Flag unavailable" className={`${baseSize} inline-flex shrink-0 items-center justify-center rounded border border-slate-200 bg-slate-100 text-slate-400`}>
+        <ImageIcon size={14} aria-hidden="true" />
+      </span>
+    );
   }
+  return (
+    <img
+      src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
+      alt={`${name} flag`}
+      loading="lazy"
+      onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/flag-placeholder.svg"; }}
+      className={`${baseSize} shrink-0 rounded border border-slate-200 object-cover`}
+    />
+  );
+}
 
-  if (normalizeText(reviewCons)) {
-    parts.push(`\n\nCons:\n${normalizeText(reviewCons)}`);
-  }
+function RatingInput({ category, value, onChange }) {
+  const { Icon } = category;
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-2 py-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${category.color}`}>
+          <Icon size={17} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <span className="text-xs font-semibold text-slate-800 sm:text-sm">{category.label}</span>
+      </div>
+      <div role="group" aria-label={`${category.label} rating`} className="flex shrink-0 flex-col items-end">
+        <div className="flex items-center gap-0.5 sm:gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => onChange(value === star ? 0 : star)}
+              aria-label={`${category.label}: ${star} out of 5; click again to clear`}
+              aria-pressed={value === star}
+              className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <Star
+                size={17}
+                strokeWidth={1.4}
+                className={star <= value ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200 hover:fill-amber-200 hover:text-amber-200'}
+                aria-hidden="true"
+              />
+            </button>
+          ))}
+        </div>
+        <span className="mt-0.5 text-[10px] text-slate-400">
+          {value === 0 ? 'Not rated' : value === 1 ? 'Poor' : value === 5 ? 'Excellent' : `${value} / 5`}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-  const details = [
-    duration ? `Duration: ${duration}` : null,
-    ageRange ? `Age range: ${ageRange}` : null,
-    timePeriod ? `Time period: ${timePeriod}` : null,
-  ].filter(Boolean);
+function SidebarCard({ icon: Icon, title, tone, children }) {
+  const toneClass = tone === 'green'
+    ? 'border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-white'
+    : tone === 'warm'
+      ? 'border-amber-100 bg-gradient-to-br from-amber-50/80 to-white'
+      : 'border-blue-100 bg-gradient-to-br from-blue-50/80 to-white';
+  const iconColor = tone === 'green' ? 'text-emerald-600' : tone === 'warm' ? 'text-amber-600' : 'text-blue-600';
+  return (
+    <div className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${toneClass}`}>
+      <div className="mb-4 flex items-center gap-3">
+        <Icon size={23} strokeWidth={1.8} className={iconColor} aria-hidden="true" />
+        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
 
-  if (details.length > 0) {
-    parts.push(`\n\nAdditional details:\n${details.join('\n')}`);
-  }
-
-  return parts.join('');
-};
+const FEATURE_ITEMS = [
+  { Icon: UsersRound, title: 'Real perspectives', description: 'Experiences shared by people around the world.' },
+  { Icon: ShieldCheck, title: 'Thoughtful community', description: 'Submissions are reviewed before appearing publicly.' },
+  { Icon: MessageCircle, title: 'Global conversation', description: 'Discover what life is like across different countries.' },
+  { Icon: Star, title: 'Make an impact', description: 'Your experience can help someone make a decision.' },
+];
 
 export default function SubmitReviewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { countries = [], loading: countriesLoading, error: countriesError } = useCountries();
 
-  const { countries: supabaseCountries, loading: countriesLoading } = useCountries();
-
-  const countryOptions = useMemo(() => {
-    const liveCountries = Array.isArray(supabaseCountries) && supabaseCountries.length > 0
-      ? supabaseCountries
-      : FALLBACK_COUNTRIES;
-
-    return [...liveCountries].sort((a, b) =>
-      getCountryName(a).localeCompare(getCountryName(b))
-    );
-  }, [supabaseCountries]);
-
-  const initialCountryFromUrl = searchParams.get('country') || 'Japan';
-
-  const [selectedCountry, setSelectedCountry] = useState(initialCountryFromUrl);
-  const [countrySearch, setCountrySearch] = useState('');
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [connectionType, setConnectionType] = useState('current_resident');
-  const [categoryRatings, setCategoryRatings] = useState(makeInitialRatings);
+  const countryOptions = useMemo(
+    () => [...countries].sort((a, b) => String(a.name).localeCompare(String(b.name))),
+    [countries]
+  );
+  const [selectedCountry, setSelectedCountry] = useState(searchParams.get('country') || '');
+  const [countryQuery, setCountryQuery] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [connectionId, setConnectionId] = useState('resident');
+  const [ratings, setRatings] = useState({});
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewText, setReviewText] = useState('');
-  const [reviewPros, setReviewPros] = useState('');
-  const [reviewCons, setReviewCons] = useState('');
+  const [pros, setPros] = useState('');
+  const [cons, setCons] = useState('');
   const [duration, setDuration] = useState('');
   const [ageRange, setAgeRange] = useState('');
   const [timePeriod, setTimePeriod] = useState('');
-  const [displayPublicly, setDisplayPublicly] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState('');
-  const [submitError, setSubmitError] = useState('');
+  const [publicationConsent, setPublicationConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const selectedCountryRow = useMemo(() => {
-    return countryOptions.find((country) => getCountryName(country) === selectedCountry) || {
-      name: selectedCountry,
-      flag_emoji: '🌍',
-    };
-  }, [countryOptions, selectedCountry]);
+  const selectedRow = countryOptions.find((country) => country.name === selectedCountry);
+  const connection = CONNECTION_TYPES.find((item) => item.id === connectionId) || CONNECTION_TYPES[0];
+  const filteredCountries = countryOptions.filter((country) => {
+    const query = countryQuery.toLowerCase().trim();
+    return !query || [country.name, country.code, country.region].some((value) => String(value || '').toLowerCase().includes(query));
+  });
+  const ratedCount = RATING_CATEGORIES.filter((category) => (ratings[category.id] || 0) > 0).length;
 
-  const filteredCountries = useMemo(() => {
-    const q = countrySearch.trim().toLowerCase();
+  function validate() {
+    if (!selectedRow) return 'Select a country from the list.';
+    if (!ratedCount) return 'Rate at least one category before submitting.';
+    if (trim(reviewTitle).length < 6) return 'Your title needs at least 6 characters.';
+    if (trim(reviewTitle).length > 100) return 'Your title must be 100 characters or fewer.';
+    if (trim(reviewText).length < 40) return 'Your review needs at least 40 characters.';
+    if (trim(reviewText).length > 2000) return 'Your review must be 2,000 characters or fewer.';
+    if (!publicationConsent) return 'Please acknowledge that approved reviews may appear publicly.';
 
-    if (!q) return countryOptions;
+    const lastSubmit = Number(localStorage.getItem(`review_cooldown_${selectedCountry}`) || 0);
+    const remaining = REVIEW_COOLDOWN_MS - (Date.now() - lastSubmit);
+    if (lastSubmit && remaining > 0) return `Please wait ${Math.ceil(remaining / 60000)} minute(s) before reviewing ${selectedCountry} again.`;
+    return '';
+  }
 
-    return countryOptions.filter((country) => {
-      const countryName = getCountryName(country).toLowerCase();
-      const code = typeof country === 'string' ? '' : String(country?.code || '').toLowerCase();
-      const region = typeof country === 'string' ? '' : String(country?.region || '').toLowerCase();
-
-      return countryName.includes(q) || code.includes(q) || region.includes(q);
-    });
-  }, [countryOptions, countrySearch]);
-
-  const currentConnection = CONNECTION_TYPES.find((type) => type.id === connectionType) || CONNECTION_TYPES[0];
-
-  const handleSelectCountry = (country) => {
-    setSelectedCountry(getCountryName(country));
-    setCountrySearch('');
-    setShowCountryDropdown(false);
-  };
-
-  const handleCategoryRating = (categoryKey, stars) => {
-    setCategoryRatings((prev) => ({
-      ...prev,
-      [categoryKey]: stars,
-    }));
-  };
-
-  const validateForm = () => {
-    const title = normalizeText(reviewTitle);
-    const comment = normalizeText(reviewText);
-
-    if (!selectedCountry) return 'Please select a country.';
-    if (!connectionType) return 'Please select your connection type.';
-    if (title.length < 6) return 'Review title must be at least 6 characters.';
-    if (title.length > 100) return 'Review title must be 100 characters or fewer.';
-    if (comment.length < 40) return 'Review text must be at least 40 characters.';
-    if (comment.length > 2000) return 'Review text must be 2000 characters or fewer.';
-
-    const hasRating = UI_CATEGORIES.some((cat) => Number(categoryRatings[cat.uiKey] || 0) > 0);
-    if (!hasRating) return 'Please rate at least one category.';
-
-    return null;
-  };
-
-  const getCooldownMessage = () => {
-    const cooldownKey = `review_cooldown_${selectedCountry}`;
-    const lastSubmittedAt = Number(localStorage.getItem(cooldownKey) || 0);
-
-    if (!lastSubmittedAt) return null;
-
-    const elapsed = Date.now() - lastSubmittedAt;
-    if (elapsed >= REVIEW_COOLDOWN_MS) return null;
-
-    const remainingMinutes = Math.ceil((REVIEW_COOLDOWN_MS - elapsed) / 60000);
-    return `Please wait ${remainingMinutes} more minute${remainingMinutes === 1 ? '' : 's'} before submitting another review for ${selectedCountry}.`;
-  };
-
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
-
-    if (isSubmitting) return;
-
-    const validationError = validateForm();
-    if (validationError) {
-      setSubmitError(validationError);
-      setSubmitMessage('');
+    if (submitting) return;
+    const problem = validate();
+    if (problem) {
+      setErrorMessage(problem);
+      setSuccessMessage('');
       return;
     }
+    setSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
 
-    const cooldownError = getCooldownMessage();
-    if (cooldownError) {
-      setSubmitError(cooldownError);
-      setSubmitMessage('');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError('');
-    setSubmitMessage('');
-
-    const comment = buildComment({
-      reviewText,
-      reviewPros,
-      reviewCons,
-      duration,
-      ageRange,
-      timePeriod,
-    });
-
-    const rows = UI_CATEGORIES
-      .filter((cat) => Number(categoryRatings[cat.uiKey] || 0) > 0)
-      .map((cat) => ({
-        country: selectedCountry,
-        status: currentConnection.status,
-        category: cat.dbKey,
-        subcategory: cat.subcategory || cat.label,
-        score: Number(categoryRatings[cat.uiKey]) * 2,
-        title: normalizeText(reviewTitle),
-        comment,
+    const rows = RATING_CATEGORIES
+      .filter((category) => (ratings[category.id] || 0) > 0)
+      .map((category) => ({
+        country: selectedRow.name,
+        status: connection.status,
+        category: category.dbKey,
+        subcategory: category.subcategory,
+        score: (ratings[category.id] || 0) * 2,
+        title: trim(reviewTitle),
+        comment: trim(reviewText),
+        pros: trim(pros) || null,
+        cons: trim(cons) || null,
+        age_range: ageRange || null,
+        duration_stayed: duration || null,
+        time_period: timePeriod || null,
         display_name: 'Anonymous',
         approved: false,
       }));
 
     try {
       const { error } = await supabase.from('reviews').insert(rows);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      localStorage.setItem(`review_cooldown_${selectedCountry}`, Date.now().toString());
-
-      setSubmitMessage(
-        'Review submitted! Thanks for sharing your experience. Your review will be moderated before it goes live.'
-      );
-
+      if (error) throw new Error(error.message);
+      localStorage.setItem(`review_cooldown_${selectedCountry}`, String(Date.now()));
       setReviewTitle('');
       setReviewText('');
-      setReviewPros('');
-      setReviewCons('');
+      setPros('');
+      setCons('');
       setDuration('');
       setAgeRange('');
       setTimePeriod('');
-      setDisplayPublicly(false);
-      setCategoryRatings(makeInitialRatings());
+      setRatings({});
+      setPublicationConsent(false);
+      setSuccessMessage('Review submitted. Thank you! Your submission will remain pending until moderation.');
     } catch (error) {
-      setSubmitError(error.message || 'Failed to submit review. Please try again.');
+      setErrorMessage(error?.message || 'Your review could not be submitted. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Breadcrumb */}
-      <div className="border-b border-slate-200 bg-white sticky top-20 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Link to="/" className="text-blue-600 hover:underline">
-              Home
-            </Link>
-            <ChevronRight size={16} className="text-slate-400" />
-            <span className="text-slate-900 font-medium">Submit Review</span>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fbfcff] pb-12">
+      <div className="border-b border-slate-100 bg-white">
+        <nav aria-label="Breadcrumb" className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-4 text-xs sm:px-6 lg:px-8">
+          <Link to="/" className="text-blue-600 hover:underline">Home</Link>
+          <ChevronRight size={14} className="text-slate-400" aria-hidden="true" />
+          <span className="font-medium text-slate-700">Submit Review</span>
+        </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2">
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-slate-900 mb-2">Submit a Review</h1>
-              <p className="text-slate-600">
-                Share your experience and help others understand what life is really like in this country.
-              </p>
-            </div>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-7 flex items-center justify-between gap-8 pt-7 sm:pt-10">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-[40px]">Submit a Review</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+              Share your experience and help others understand what life is really like in this country.
+            </p>
+          </div>
+          {/* Intentional placeholder: no emoji globe or unrelated stock image. */}
+          <img
+            src="/images/review-hero-placeholder.svg"
+            alt="Illustration placeholder for CountryScore community artwork"
+            className="hidden h-[136px] w-[310px] shrink-0 object-contain lg:block"
+          />
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Section 1: Select a Country */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">1</div>
-                  <h2 className="text-lg font-bold text-slate-900">Select a Country</h2>
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_310px] xl:gap-7 xl:grid-cols-[minmax(0,1fr)_335px]">
+          <form onSubmit={handleSubmit} noValidate className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_35px_-25px_rgba(15,23,42,0.26)]">
+            <section className="px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading number="1" title="Select a Country" />
+              <div className="relative">
+                <label htmlFor="country-search" className="sr-only">Search for a country</label>
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/15">
+                  <Search size={18} className="shrink-0 text-slate-400" aria-hidden="true" />
+                  <input
+                    id="country-search"
+                    type="search"
+                    autoComplete="off"
+                    placeholder={countriesLoading ? 'Loading countries...' : 'Search for a country...'}
+                    value={countryQuery}
+                    onChange={(event) => { setCountryQuery(event.target.value); setCountryOpen(true); }}
+                    onFocus={() => setCountryOpen(true)}
+                    className="w-full min-w-0 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                    disabled={countriesLoading || !!countriesError}
+                    aria-expanded={countryOpen}
+                    aria-controls="country-options"
+                  />
+                  <ChevronDown size={17} className="shrink-0 text-slate-400" aria-hidden="true" />
                 </div>
-
-                <div className="relative">
-                  <div className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg bg-white">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder={countriesLoading ? 'Loading countries...' : 'Search for a country...'}
-                      value={countrySearch}
-                      onChange={(e) => {
-                        setCountrySearch(e.target.value);
-                        setShowCountryDropdown(true);
-                      }}
-                      onFocus={() => setShowCountryDropdown(true)}
-                      className="flex-1 outline-none text-sm text-slate-900 placeholder-slate-500 bg-white"
-                    />
-                    <ChevronRight size={16} className="text-slate-400" />
-                  </div>
-
-                  {showCountryDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-1 border border-slate-200 rounded-lg bg-white shadow-lg z-20 max-h-56 overflow-y-auto">
-                      {filteredCountries.map((country) => (
-                        <button
-                          key={getCountryName(country)}
-                          type="button"
-                          onClick={() => handleSelectCountry(country)}
-                          className="w-full text-left px-4 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-0 text-sm text-slate-900 flex items-center gap-2"
-                        >
-                          <span>{getCountryFlag(country)}</span>
-                          <span>{getCountryName(country)}</span>
-                          {typeof country !== 'string' && country.region && (
-                            <span className="ml-auto text-xs text-slate-500">{country.region}</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedCountry && (
-                  <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg w-fit">
-                    <span className="text-2xl">{selectedCountryRow?.flag_emoji || '🌍'}</span>
-                    <span className="text-sm font-medium text-slate-900">{selectedCountry}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCountry('')}
-                      className="ml-2 text-slate-400 hover:text-slate-600"
-                    >
-                      ✕
-                    </button>
+                {countryOpen && !countriesLoading && !countriesError && (
+                  <div id="country-options" className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                    {filteredCountries.length ? filteredCountries.map((country) => (
+                      <button
+                        key={country.code || country.name}
+                        type="button"
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-slate-800 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                        onClick={() => { setSelectedCountry(country.name); setCountryQuery(''); setCountryOpen(false); }}
+                      >
+                        <CountryFlag code={country.code} name={country.name} size="sm" />
+                        <span className="font-medium">{country.name}</span>
+                        <span className="ml-auto text-xs text-slate-400">{country.region}</span>
+                      </button>
+                    )) : <div className="px-3 py-3 text-sm text-slate-500">No matching countries.</div>}
                   </div>
                 )}
               </div>
-
-              {/* Section 2: Connection Type */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">2</div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">What is your connection to this country?</h2>
-                    <p className="text-xs text-slate-600 mt-1">This helps others understand your perspective.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {CONNECTION_TYPES.map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setConnectionType(type.id)}
-                      className={`p-4 rounded-lg border-2 transition ${
-                        connectionType === type.id
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{type.icon}</div>
-                      <p className="text-sm font-semibold text-slate-900">{type.label}</p>
-                      <p className="text-xs text-slate-600 mt-1">{type.subtext}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Section 3: Rate Your Experience */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">3</div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Rate Your Experience</h2>
-                    <p className="text-xs text-slate-600 mt-1">How would you rate this country in the following categories?</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {UI_CATEGORIES.map((cat) => (
-                    <div key={cat.uiKey} className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{cat.icon}</span>
-                        <span className="text-sm font-medium text-slate-900">{cat.label}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => handleCategoryRating(cat.uiKey, star)}
-                              className={`transition ${
-                                Number(categoryRatings[cat.uiKey] || 0) >= star
-                                  ? 'text-amber-400 text-lg'
-                                  : 'text-slate-300 text-lg hover:text-amber-200'
-                              }`}
-                              aria-label={`${cat.label}: ${star} stars`}
-                            >
-                              ★
-                            </button>
-                          ))}
-                        </div>
-                        <span className="text-xs text-slate-600 w-16 text-right">
-                          {Number(categoryRatings[cat.uiKey] || 0) <= 1
-                            ? 'Poor'
-                            : Number(categoryRatings[cat.uiKey] || 0) >= 5
-                              ? 'Excellent'
-                              : `${categoryRatings[cat.uiKey]}/5`}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Section 4: Write Your Review */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">4</div>
-                  <h2 className="text-lg font-bold text-slate-900">Write Your Review</h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Review title</label>
-                    <div className="flex items-end gap-2">
-                      <input
-                        type="text"
-                        placeholder="Give your review a short title"
-                        value={reviewTitle}
-                        onChange={(e) => setReviewTitle(e.target.value.slice(0, 100))}
-                        maxLength={100}
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                      <span className="text-xs text-slate-600 whitespace-nowrap">{reviewTitle.length} / 100</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Your review</label>
-                    <div className="flex flex-col">
-                      <textarea
-                        placeholder="Share your experience, both the good and the bad. What do you like? What could be better? Any tips for others?"
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value.slice(0, 2000))}
-                        maxLength={2000}
-                        rows={5}
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-vertical"
-                      />
-                      <div className="text-right mt-2 text-xs text-slate-600">
-                        {reviewText.length} / 2000
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-2">Pros (optional)</label>
-                      <textarea
-                        placeholder="What are the best things about living/visiting here?"
-                        value={reviewPros}
-                        onChange={(e) => setReviewPros(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-vertical"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-2">Cons (optional)</label>
-                      <textarea
-                        placeholder="What are the main downsides?"
-                        value={reviewCons}
-                        onChange={(e) => setReviewCons(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-vertical"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-2">Add photos (optional)</label>
-                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center bg-slate-50 cursor-not-allowed opacity-50">
-                      <Upload size={24} className="mx-auto text-slate-400 mb-2" />
-                      <p className="text-sm text-slate-600 mb-1">Photo uploads are coming in Phase 3</p>
-                      <p className="text-xs text-slate-500">PNG, JPG up to 10MB</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 5: Additional Details */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">5</div>
-                  <h2 className="text-lg font-bold text-slate-900">Additional Details</h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">How long have you been here?</label>
-                    <select
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                    >
-                      <option value="">Select duration</option>
-                      {DURATION_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Age range</label>
-                    <select
-                      value={ageRange}
-                      onChange={(e) => setAgeRange(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                    >
-                      <option value="">Select age range</option>
-                      {AGE_RANGES.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Time of year visited/lived</label>
-                    <select
-                      value={timePeriod}
-                      onChange={(e) => setTimePeriod(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                    >
-                      <option value="">Select time period</option>
-                      {TIME_PERIODS.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="displayPublic"
-                    checked={displayPublicly}
-                    onChange={(e) => setDisplayPublicly(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <label htmlFor="displayPublic" className="text-sm text-slate-700">
-                    You can display my review publicly
-                  </label>
-                </div>
-              </div>
-
-              {submitError && (
-                <div className="flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
-                  <p className="text-sm text-red-700">{submitError}</p>
+              {countriesError && <p className="mt-2 text-xs text-red-600">Couldn't load countries. Please reload the page.</p>}
+              {selectedCountry && (
+                <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5">
+                  <CountryFlag code={selectedRow?.code} name={selectedCountry} size="sm" />
+                  <span className="flex-1 text-sm font-semibold text-slate-900">{selectedCountry}</span>
+                  <button type="button" onClick={() => setSelectedCountry('')} className="rounded p-1 text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Remove selected country">
+                    <X size={17} aria-hidden="true" />
+                  </button>
                 </div>
               )}
+            </section>
 
-              {submitMessage && (
-                <div className="flex gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <div className="text-lg">✓</div>
-                  <p className="text-sm text-emerald-700">{submitMessage}</p>
+            <section className="border-t border-slate-100 px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading number="2" title="What is your connection to this country?" subtitle="This helps others understand your perspective." />
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+                {CONNECTION_TYPES.map(({ id, Icon, label, subtitle }) => (
+                  <button
+                    type="button"
+                    key={id}
+                    aria-pressed={id === connectionId}
+                    onClick={() => setConnectionId(id)}
+                    className={`flex min-h-[113px] min-w-0 flex-col items-center justify-center rounded-xl border px-2 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${id === connectionId ? 'border-blue-600 bg-blue-50/80 shadow-[0_0_0_1px_rgba(37,99,235,.3)]' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'}`}
+                  >
+                    <Icon size={24} className={id === connectionId ? 'text-blue-600' : 'text-slate-500'} aria-hidden="true" strokeWidth={1.8} />
+                    <span className={`mt-2 text-xs font-semibold ${id === connectionId ? 'text-blue-700' : 'text-slate-900'}`}>{label}</span>
+                    <span className="mt-0.5 text-[10px] leading-4 text-slate-500">{subtitle}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="border-t border-slate-100 px-4 py-5 sm:px-6 sm:py-6">
+              <div className="flex items-start justify-between gap-3">
+                <SectionHeading number="3" title="Rate your experience" subtitle="Rate only the categories you have experience with." />
+                <span className="pt-2 text-xs text-slate-500">{ratedCount} of {RATING_CATEGORIES.length} rated</span>
+              </div>
+              <div className="grid grid-cols-1 gap-x-7 sm:grid-flow-col sm:grid-cols-2 sm:grid-rows-5">
+                {RATING_CATEGORIES.map((category) => (
+                  <RatingInput key={category.id} category={category} value={ratings[category.id] || 0} onChange={(value) => setRatings((prev) => ({ ...prev, [category.id]: value }))} />
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">Click a selected star again to clear a rating. Unrated categories aren't submitted.</p>
+            </section>
+
+            <section className="border-t border-slate-100 px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading number="4" title="Write your review" />
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="review-title" className="mb-1.5 block text-xs font-semibold text-slate-800">Review title</label>
+                  <div className="relative">
+                    <input id="review-title" value={reviewTitle} onChange={(event) => setReviewTitle(event.target.value.slice(0, 100))} maxLength={100} placeholder="Give your review a short title" className={`${inputClass} pr-16`} />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] text-slate-400">{reviewTitle.length} / 100</span>
+                  </div>
                 </div>
-              )}
-
-              <div className="flex items-center gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="px-6 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg transition"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Review'}
-                </button>
+                <div>
+                  <label htmlFor="review-text" className="mb-1.5 block text-xs font-semibold text-slate-800">Your review</label>
+                  <div className="relative">
+                    <textarea id="review-text" rows={4} value={reviewText} onChange={(event) => setReviewText(event.target.value.slice(0, 2000))} maxLength={2000} placeholder="Share your experience, both the good and the bad. What did you like? What could be better? Any tips for others?" className={`${inputClass} min-h-[125px] resize-y pb-7`} />
+                    <span className="pointer-events-none absolute bottom-3 right-3 text-[11px] text-slate-400">{reviewText.length} / 2000</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="review-pros" className="mb-1.5 block text-xs font-semibold text-slate-800">Pros <span className="font-normal text-slate-400">(optional)</span></label>
+                    <textarea id="review-pros" rows={3} value={pros} onChange={(event) => setPros(event.target.value)} placeholder="What were the best things?" className={`${inputClass} resize-y`} />
+                  </div>
+                  <div>
+                    <label htmlFor="review-cons" className="mb-1.5 block text-xs font-semibold text-slate-800">Cons <span className="font-normal text-slate-400">(optional)</span></label>
+                    <textarea id="review-cons" rows={3} value={cons} onChange={(event) => setCons(event.target.value)} placeholder="What were the biggest downsides?" className={`${inputClass} resize-y`} />
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-slate-800">Add photos <span className="font-normal text-slate-400">(coming later)</span></p>
+                  <div aria-disabled="true" className="flex min-h-[95px] flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center">
+                    <CloudUpload size={22} className="text-slate-400" aria-hidden="true" />
+                    <p className="text-xs font-medium text-slate-500">Photo uploads aren't available yet</p>
+                    <p className="text-[11px] text-slate-400">This area is reserved for the future image uploader.</p>
+                  </div>
+                </div>
               </div>
+            </section>
 
-              <p className="text-xs text-slate-600">
-                Your review will be moderated before it goes live.
-              </p>
-            </form>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-slate-200 rounded-xl p-8 flex items-center justify-center relative h-64">
-              <div className="text-center relative z-10">
-                <div className="text-6xl mb-2">🌍</div>
-                <div className="absolute top-4 right-4 text-lg">⭐</div>
-                <div className="absolute top-12 left-4 text-lg">❤️</div>
-                <div className="absolute bottom-8 right-8 text-lg">💬</div>
-              </div>
-              <div className="absolute inset-0 rounded-xl border-2 border-dashed border-blue-200 opacity-40" />
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="text-2xl">🛡️</div>
-                <h3 className="font-bold text-slate-900">Your opinion matters</h3>
-              </div>
-              <div className="text-sm text-slate-700 space-y-2">
+            <section className="border-t border-slate-100 px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading number="5" title="Additional details" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {[
-                  'Real experiences from people like you help others.',
-                  'Build a more accurate picture of countries.',
-                  'Be honest and respectful.',
-                  'Reviews are moderated for quality.',
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <span>✓</span>
-                    <span>{item}</span>
+                  { id: 'duration', label: 'How long have you been here?', value: duration, onChange: setDuration, options: DURATION_OPTIONS, placeholder: 'Select duration' },
+                  { id: 'age', label: 'Age range', value: ageRange, onChange: setAgeRange, options: AGE_OPTIONS, placeholder: 'Select age range' },
+                  { id: 'time', label: 'Time of year visited/lived', value: timePeriod, onChange: setTimePeriod, options: TIME_OPTIONS, placeholder: 'Select time period' },
+                ].map(({ id, label, value, onChange, options, placeholder }) => (
+                  <div key={id}>
+                    <label htmlFor={`review-${id}`} className="mb-1.5 block text-xs font-semibold text-slate-800">{label}</label>
+                    <select id={`review-${id}`} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
+                      <option value="">{placeholder}</option>
+                      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
                   </div>
                 ))}
               </div>
-            </div>
+              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg p-1 text-xs text-slate-700">
+                <input type="checkbox" checked={publicationConsent} onChange={(event) => setPublicationConsent(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600" />
+                <span><span className="font-semibold text-slate-900">I understand my review may be displayed publicly if approved.</span><br />Please avoid sharing personal or identifying information. You can only submit after acknowledging this.</span>
+              </label>
+            </section>
 
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
-              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <span>💡</span> Review tips
-              </h3>
-              <ul className="space-y-2 text-sm text-slate-700">
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0">→</span>
-                  <span><strong>Be specific</strong> — Share examples and details about your experience.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0">→</span>
-                  <span><strong>Keep it helpful</strong> — Think about what others would want to know.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0">→</span>
-                  <span><strong>Stay respectful</strong> — Different experiences are okay! Let&apos;s keep it friendly.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <span>⏱️</span> What happens next?
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">1. Review submitted</p>
-                  <p className="text-xs text-slate-600">We&apos;ll review your submission.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">2. Under moderation</p>
-                  <p className="text-xs text-slate-600">Our team checks for quality and safety.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">3. Goes live</p>
-                  <p className="text-xs text-slate-600">Your review is published and helps others!</p>
-                </div>
+            <div className="border-t border-slate-100 px-4 py-5 sm:px-6">
+              {errorMessage && <div role="alert" className="mb-4 flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={18} className="shrink-0" aria-hidden="true" />{errorMessage}</div>}
+              {successMessage && <div role="status" className="mb-4 flex gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"><CheckCircle2 size={18} className="shrink-0" aria-hidden="true" />{successMessage}</div>}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button type="button" onClick={() => navigate('/')} className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="submit" disabled={submitting || countriesLoading || !!countriesError} className="rounded-lg bg-blue-600 px-7 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
+                  {submitting ? 'Submitting…' : 'Submit Review'}
+                </button>
               </div>
-              <p className="text-xs text-amber-700 mt-4">This usually takes less than 24 hours. 🎉</p>
+              <p className="mt-2 text-right text-xs text-slate-500">Submissions are reviewed before publication.</p>
             </div>
-          </div>
-        </div>
-      </div>
+          </form>
 
-      <div className="border-t border-slate-200 bg-slate-50 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              ['👥', 'Real people', 'Reviews come from real users with real experiences.'],
-              ['🛡️', 'Safe & respectful', 'We moderate every review to keep our community safe.'],
-              ['🌍', 'Global community', 'Join people sharing insights about countries.'],
-              ['⭐', 'Make an impact', 'Your review helps others make better decisions.'],
-            ].map(([icon, title, text]) => (
-              <div key={title} className="text-center">
-                <div className="text-3xl mb-3">{icon}</div>
-                <h4 className="font-bold text-slate-900 mb-1">{title}</h4>
-                <p className="text-sm text-slate-600">{text}</p>
+          <aside className="space-y-5">
+            <SidebarCard icon={ShieldCheck} title="Your opinion matters">
+              <p className="mb-5 text-sm leading-6 text-slate-700">Real experiences help others build a more informed understanding of countries around the world.</p>
+              <div className="space-y-3 text-xs text-slate-700">
+                {['Be honest about your experience', 'Focus on first-hand observations', 'Be respectful of other perspectives', 'Reviews are subject to moderation'].map((item) => (
+                  <div key={item} className="flex items-start gap-2.5"><CheckCircle2 size={16} className="shrink-0 text-emerald-600" aria-hidden="true" />{item}</div>
+                ))}
               </div>
-            ))}
-          </div>
+            </SidebarCard>
+            <SidebarCard icon={Lightbulb} title="Review tips" tone="green">
+              <div className="space-y-5">
+                {[
+                  { Icon: MessageCircle, title: 'Be specific', text: 'Share examples and helpful details from your experience.' },
+                  { Icon: Heart, title: 'Keep it helpful', text: 'Consider what others would want to know.' },
+                  { Icon: UsersRound, title: 'Stay respectful', text: 'Different experiences are valid. Keep it constructive.' },
+                ].map(({ Icon, title, text }) => (
+                  <div key={title} className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm"><Icon size={20} aria-hidden="true" /></span><div><p className="text-xs font-semibold text-slate-900">{title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{text}</p></div></div>
+                ))}
+              </div>
+            </SidebarCard>
+            <SidebarCard icon={Clock3} title="What happens next?" tone="warm">
+              <ol className="space-y-5">
+                {[
+                  ['Review submitted', 'Your submission is recorded.'],
+                  ['Under moderation', 'The submission is checked before publication.'],
+                  ['Published if approved', 'Approved submissions become visible to others.'],
+                ].map(([title, text], index) => (
+                  <li key={title} className="flex items-start gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">{index + 1}</span><div><p className="text-xs font-semibold text-slate-900">{title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{text}</p></div></li>
+                ))}
+              </ol>
+              <p className="mt-5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">Moderation timing can vary.</p>
+            </SidebarCard>
+          </aside>
         </div>
-      </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
+          {FEATURE_ITEMS.map(({ Icon, title, description }) => (
+            <div key={title} className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon size={21} aria-hidden="true" /></span><div><p className="text-xs font-semibold text-slate-900">{title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div></div>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 60" role="img" aria-label="Flag image unavailable">
+<rect width="80" height="60" rx="4" fill="#f1f5f9"/>
+<rect x="7" y="7" width="66" height="46" rx="3" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4"/>
+<circle cx="29" cy="23" r="6" fill="#cbd5e1"/>
+<path d="M18 42l12-14 10 10 8-8 14 12" fill="none" stroke="#b4c6da" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
