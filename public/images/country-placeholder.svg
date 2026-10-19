@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-label="Country photo placeholder">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8f2fd"/><stop offset="1" stop-color="#d8e4f1"/></linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b9cde3"/><stop offset="1" stop-color="#96b5d3"/></linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <circle cx="610" cy="122" r="45" fill="#ffffff" fill-opacity=".68"/>
+  <path d="M0 314L150 193L273 310L392 165L566 337L683 255L800 339V480H0Z" fill="#c8d9e9"/>
+  <path d="M0 375L189 276L315 369L468 262L626 394L800 314V480H0Z" fill="url(#hill)"/>
+  <path d="M0 432L200 365L391 418L569 347L800 424V480H0Z" fill="#8eaccb" opacity=".7"/>
+  <g fill="none" stroke="#7495b7" stroke-width="2.5" opacity=".6" transform="translate(378 330)">
+    <rect x="0" y="0" width="44" height="33" rx="5"/>
+    <circle cx="12" cy="10" r="4"/>
+    <path d="M3 30l12-11 9 8 8-10 9 13"/>
+  </g>
+</svg>
